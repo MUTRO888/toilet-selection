@@ -1,0 +1,35 @@
+.background {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.coverBlur {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(40px) brightness(0.6);
+    transform: scale(1.1);
+    animation: breathe 8s ease-in-out infinite alternate;
+    transition: opacity 0.6s ease;
+}
+
+.fallback {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(160deg,
+            #0a0a0a 0%,
+            #1a1a2e 50%,
+            #16213e 100%);
+}
+
+@keyframes breathe {
+    0% {
+        transform: scale(1.0);
+    }
+
+    100% {
+        transform: scale(1.1);
+    }
+}

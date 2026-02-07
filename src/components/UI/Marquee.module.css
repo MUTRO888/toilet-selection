@@ -1,7 +1,7 @@
 .marquee {
-    background: #ccff00;
-    color: #000;
-    border-top: 3px solid #000;
+    background: rgba(0, 0, 0, 0.85);
+    color: #ccff00;
+    border-top: 2px solid rgba(204, 255, 0, 0.4);
     padding: 8px 0;
     font-weight: 900;
     font-size: 18px;

@@ -15,11 +15,13 @@
   font-size: 56px;
   line-height: 1;
   margin: 0;
-  color: #000;
+  color: #fff;
   letter-spacing: -1px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
 }
 
 .highlight {
   color: #ccff00;
-  -webkit-text-stroke: 1px #000;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.4);
+  text-shadow: 0 0 20px rgba(204, 255, 0, 0.5);
 }

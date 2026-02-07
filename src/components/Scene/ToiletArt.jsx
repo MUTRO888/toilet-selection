@@ -58,55 +58,73 @@ function createEmojiTexture() {
     return new THREE.CanvasTexture(canvas)
 }
 
-export default function ToiletArt() {
+export default function ToiletArt({ variant = 'default' }) {
     const emojiTexture = useMemo(() => createEmojiTexture(), [])
+    const isChrome = variant === 'chrome'
+
+    const material = isChrome ? (
+        <meshPhysicalMaterial
+            color="#ffffff"
+            metalness={1.0}
+            roughness={0.15}
+            envMapIntensity={1.5}
+            clearcoat={1}
+            clearcoatRoughness={0.1}
+        />
+    ) : (
+        <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+    )
 
     return (
-        <group position={[2.4, 0.05, 0]} scale={0.6}>
+        <group position={isChrome ? [0, 0, 0] : [2.4, 0.05, 0]} scale={isChrome ? 1 : 0.6}>
             <mesh position={[0, 0.5, 0]} castShadow>
                 <cylinderGeometry args={[0.35, 0.5, 1.0, 64]} />
-                <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+                {material}
             </mesh>
 
             <mesh position={[0, 1.1, 0.35]} scale={[1, 1, 1.3]} castShadow>
                 <cylinderGeometry args={[0.85, 0.4, 0.85, 64]} />
-                <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+                {material}
             </mesh>
 
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1.5, 0.4]} scale={[1, 1.25, 1]}>
-                <circleGeometry args={[0.65, 64]} />
-                <meshPhysicalMaterial color={COLORS.ACCENT} transparent opacity={0.7} roughness={0} transmission={0.5} thickness={0.5} />
-            </mesh>
+            {!isChrome && (
+                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1.5, 0.4]} scale={[1, 1.25, 1]}>
+                    <circleGeometry args={[0.65, 64]} />
+                    <meshPhysicalMaterial color={COLORS.ACCENT} transparent opacity={0.7} roughness={0} transmission={0.5} thickness={0.5} />
+                </mesh>
+            )}
 
             <mesh position={[0, 1.3, -0.5]} castShadow>
                 <boxGeometry args={[1.1, 1.2, 0.6]} />
-                <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+                {material}
             </mesh>
 
             <mesh position={[0, 1.9, -0.5]}>
                 <boxGeometry args={[1.15, 0.15, 0.65]} />
-                <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+                {material}
             </mesh>
 
             <mesh position={[0.4, 1.6, -0.2]}>
                 <boxGeometry args={[0.2, 0.08, 0.08]} />
-                <meshStandardMaterial color="#dddddd" roughness={0.1} metalness={0.8} />
+                {isChrome ? material : <meshStandardMaterial color="#dddddd" roughness={0.1} metalness={0.8} />}
             </mesh>
 
             <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 1.55, 0.35]} scale={[1, 1.4, 1]}>
                 <torusGeometry args={[0.6, 0.1, 32, 100]} />
-                <meshStandardMaterial color="#ffffff" roughness={0.4} metalness={0.05} />
+                {material}
             </mesh>
 
             <mesh position={[0, 1.65, -0.2]} rotation={[-Math.PI * 0.55, 0, 0]} scale={[1, 1, 1.3]}>
                 <cylinderGeometry args={[0.8, 0.8, 0.08, 64]} />
-                <meshStandardMaterial color="#ffffff" roughness={0.2} metalness={0.1} />
+                {material}
             </mesh>
 
-            <mesh position={[0, 2.6, 0.35]} rotation={[-1.2, -1.5, -0.3]}>
-                <sphereGeometry args={[0.65, 64, 64]} />
-                <meshBasicMaterial map={emojiTexture} />
-            </mesh>
+            {!isChrome && (
+                <mesh position={[0, 2.6, 0.35]} rotation={[-1.2, -1.5, -0.3]}>
+                    <sphereGeometry args={[0.65, 64, 64]} />
+                    <meshBasicMaterial map={emojiTexture} />
+                </mesh>
+            )}
         </group>
     )
 }

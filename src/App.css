@@ -11,7 +11,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--bg-color, #111);
+  background: #1a1a1a;
   font-family: 'Inter', sans-serif;
   overflow: hidden;
   user-select: none;
@@ -20,28 +20,50 @@ body {
 #root {
   width: 100%;
   height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
+/* Two-column creator layout */
+.app-layout {
+  display: flex;
+  gap: 60px;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  padding: 40px;
+}
+
+/* iPhone 13 shell */
+.iphone-container {
+  width: 390px;
+  height: 844px;
+  min-width: 390px;
+  min-height: 844px;
+  border: 12px solid #333;
+  border-radius: 50px;
+  box-shadow:
+    0 0 0 2px #1a1a1a,
+    0 0 60px rgba(0, 0, 0, 0.6),
+    inset 0 0 2px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+/* Inner screen content */
 .poster-container {
-  --card-w: 540px;
-  --card-h: 960px;
+  --card-w: 390px;
+  --card-h: 844px;
   --highlight: #ccff00;
   --accent: #4d4dff;
   --bg-color: #111;
 
-  width: var(--card-w);
-  height: var(--card-h);
-  max-height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+  width: 100%;
+  height: 100%;
+  background: transparent;
   position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  border: 4px solid #000;
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
 }
 
 .scene-container {
@@ -56,4 +78,31 @@ body {
   width: 100% !important;
   height: 100% !important;
   cursor: pointer;
+}
+
+/* Control panel */
+.control-panel {
+  width: 320px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.control-panel h2 {
+  font-size: 22px;
+  font-weight: 900;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.control-panel p {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: -16px 0 0 0;
+  line-height: 1.5;
 }
