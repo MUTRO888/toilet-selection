@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--bg-color, #111);
+  font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.poster-container {
+  --card-w: 540px;
+  --card-h: 960px;
+  --highlight: #ccff00;
+  --accent: #4d4dff;
+  --bg-color: #111;
+
+  width: var(--card-w);
+  height: var(--card-h);
+  max-height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 4px solid #000;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.5);
+}
+
+.scene-container {
+  flex-grow: 1;
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.scene-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  cursor: pointer;
+}

@@ -1,0 +1,25 @@
+.header {
+  padding: 30px;
+  z-index: 100;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.superTitle {
+  font-family: 'Inter', sans-serif;
+  font-weight: 900;
+  font-size: 56px;
+  line-height: 1;
+  margin: 0;
+  color: #000;
+  letter-spacing: -1px;
+}
+
+.highlight {
+  color: #ccff00;
+  -webkit-text-stroke: 1px #000;
+}
