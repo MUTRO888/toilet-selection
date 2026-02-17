@@ -1,7 +1,6 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { COLORS } from '../../config/constants'
-import useMusicStore from '../../store/useMusicStore'
 
 // 计算动态字号
 function calculateAdaptiveFontSize(text, baseSize) {
@@ -69,7 +68,6 @@ export default function CurvedText({
     baseCharSize = 0.35,
     isBold = false
 }) {
-    const { coverImage } = useMusicStore()
 
     // 动态弧度范围
     const adaptiveArc = useMemo(() => {

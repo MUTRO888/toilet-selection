@@ -1,14 +1,13 @@
 .marquee {
-    background: #FFE600;
+    background: #ccff00;
     color: #000;
-    border-top: 4px solid #000;
-    border-bottom: 4px solid #000;
-    padding: 12px 0;
-    font-weight: 800;
-    font-size: 16px;
+    padding: 8px 0;
+    font-weight: 900;
+    font-size: 11px;
     white-space: nowrap;
     overflow: hidden;
     text-transform: uppercase;
+    letter-spacing: 2px;
     position: absolute;
     bottom: 0;
     width: 100%;
@@ -18,14 +17,13 @@
 
 .content {
     display: inline-block;
-    animation: marquee 12s linear infinite;
+    animation: marquee 14s linear infinite;
 }
 
 @keyframes marquee {
     0% {
         transform: translateX(0);
     }
-
     100% {
         transform: translateX(-50%);
     }

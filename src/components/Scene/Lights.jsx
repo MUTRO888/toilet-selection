@@ -1,10 +1,10 @@
 export default function Lights() {
     return (
         <>
-            {/* 主光源 - Key Light: 从侧前方打光，营造体积感 */}
+            {/* Key light — warm white, strong for paper surface */}
             <directionalLight
                 position={[5, 8, 8]}
-                intensity={0.7}
+                intensity={1.0}
                 color="#ffffff"
                 castShadow
                 shadow-mapSize={[2048, 2048]}
@@ -17,29 +17,39 @@ export default function Lights() {
                 shadow-bias={-0.001}
             />
 
-            {/* 补光 - Fill Light: 从另一侧补充，降低对比度 */}
+            {/* Fill light — cool tint */}
             <directionalLight
                 position={[-6, 4, 4]}
-                intensity={0.25}
+                intensity={0.35}
                 color="#e8e8ff"
             />
 
-            {/* 轮廓光 - Rim Light: 从后方打出轮廓 */}
+            {/* Rim light — warm backlight for edge definition */}
             <directionalLight
                 position={[0, 6, -8]}
                 intensity={0.4}
                 color="#fff8e7"
             />
 
-            {/* 环境光 - 降低强度，让方向光主导 */}
+            <hemisphereLight args={['#ffffff', '#4d4dff', 0.2]} />
+
             <ambientLight intensity={0.15} />
-            
-            {/* 底部反射光 - 模拟地面反光 */}
+
+            {/* Neon underglow — brand color on white paper */}
             <pointLight
-                position={[0, -3, 2]}
-                intensity={0.3}
+                position={[0, -2, 2]}
+                intensity={2.0}
+                color="#ccff00"
+                distance={8}
+                decay={2}
+            />
+
+            {/* Blue accent — subtle color contrast */}
+            <pointLight
+                position={[2, 0, 3]}
+                intensity={0.4}
                 color="#4d4dff"
-                distance={10}
+                distance={8}
                 decay={2}
             />
         </>

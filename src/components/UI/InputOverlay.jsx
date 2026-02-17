@@ -14,12 +14,6 @@ export default function InputOverlay() {
         }
     }
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            handleSubmit(e)
-        }
-    }
-
     return (
         <div className={styles.overlay}>
             <form onSubmit={handleSubmit} className={styles.form}>
@@ -27,8 +21,7 @@ export default function InputOverlay() {
                     type="text"
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Paste Apple Music Link..."
+                    placeholder="Apple Music link..."
                     className={styles.input}
                     disabled={isLoading}
                 />
@@ -37,7 +30,7 @@ export default function InputOverlay() {
                 </button>
             </form>
             <div className={styles.hint}>
-                Paste a link from Apple Music to load song info
+                Paste an Apple Music song link to generate your poster
             </div>
         </div>
     )
