@@ -7,21 +7,36 @@
   left: 0;
   width: 100%;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.superTitle {
-  font-family: 'Inter', sans-serif;
+.mainTitle {
+  font-family: 'Inter', 'Helvetica Neue', 'Arial', sans-serif;
   font-weight: 900;
-  font-size: 56px;
-  line-height: 1;
+  font-size: 52px;
+  line-height: 0.95;
   margin: 0;
-  color: #fff;
-  letter-spacing: -1px;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+  letter-spacing: -2px;
+  text-transform: uppercase;
+  
+  /* 透明填充 + 粗线条描边 - 潮流杂志风格 */
+  color: transparent;
+  -webkit-text-stroke: 2.5px #ccff00;
+  text-shadow: 
+    0 0 30px rgba(204, 255, 0, 0.3),
+    0 0 60px rgba(204, 255, 0, 0.1);
 }
 
-.highlight {
-  color: #ccff00;
-  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.4);
-  text-shadow: 0 0 20px rgba(204, 255, 0, 0.5);
+.subTag {
+  display: inline-block;
+  font-size: 1.1rem;
+  margin-top: 12px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  
+  /* 同样的描边风格 */
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.8);
 }

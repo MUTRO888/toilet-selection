@@ -1,17 +1,19 @@
 .marquee {
-    background: rgba(0, 0, 0, 0.85);
-    color: #ccff00;
-    border-top: 2px solid rgba(204, 255, 0, 0.4);
-    padding: 8px 0;
-    font-weight: 900;
-    font-size: 18px;
+    background: #FFE600;
+    color: #000;
+    border-top: 4px solid #000;
+    border-bottom: 4px solid #000;
+    padding: 12px 0;
+    font-weight: 800;
+    font-size: 16px;
     white-space: nowrap;
     overflow: hidden;
     text-transform: uppercase;
     position: absolute;
-    bottom: 180px;
+    bottom: 0;
     width: 100%;
     z-index: 100;
+    font-family: 'Courier New', Courier, monospace;
 }
 
 .content {

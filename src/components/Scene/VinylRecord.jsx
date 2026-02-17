@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect } from 'react'
+import { useMemo, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import useMusicStore from '../../store/useMusicStore'
 import { SCENE, COLORS } from '../../config/constants'
@@ -9,32 +9,37 @@ function createDefaultLabelCanvas() {
     canvas.height = 512
     const ctx = canvas.getContext('2d')
 
+    // 黑胶底色
     ctx.fillStyle = '#000'
     ctx.beginPath()
     ctx.arc(256, 256, 256, 0, Math.PI * 2)
     ctx.fill()
 
-    ctx.fillStyle = '#FF8C00'
+    // 唱片标签底色
+    ctx.fillStyle = '#1a1a1a'
     ctx.beginPath()
     ctx.arc(256, 256, 240, 0, Math.PI * 2)
     ctx.fill()
 
-    ctx.strokeStyle = 'white'
-    ctx.lineWidth = 3
+    // 装饰圈
+    ctx.strokeStyle = COLORS.HIGHLIGHT
+    ctx.lineWidth = 2
     ctx.beginPath()
     ctx.arc(256, 256, 210, 0, Math.PI * 2)
     ctx.stroke()
 
-    ctx.fillStyle = 'white'
+    // 默认文字
+    ctx.fillStyle = COLORS.HIGHLIGHT
     ctx.textAlign = 'center'
     ctx.font = '900 36px Inter, sans-serif'
     ctx.fillText('如厕精选', 256, 180)
-    ctx.font = '900 48px Inter, sans-serif'
-    ctx.fillText('CLICK TO', 256, 260)
-    ctx.fillText('UPLOAD', 256, 320)
-    ctx.font = '400 24px Inter, sans-serif'
-    ctx.fillText('ALBUM COVER', 256, 370)
+    ctx.font = '900 42px Inter, sans-serif'
+    ctx.fillText('CLICK TO', 256, 240)
+    ctx.fillText('UPLOAD', 256, 290)
+    ctx.font = '400 22px Inter, sans-serif'
+    ctx.fillText('ALBUM COVER', 256, 330)
 
+    // 中心孔
     ctx.fillStyle = COLORS.VINYL
     ctx.beginPath()
     ctx.arc(256, 256, 30, 0, Math.PI * 2)
@@ -49,11 +54,13 @@ function createCoverLabelCanvas(img) {
     canvas.height = 512
     const ctx = canvas.getContext('2d')
 
+    // 黑胶底色
     ctx.fillStyle = '#000'
     ctx.beginPath()
     ctx.arc(256, 256, 256, 0, Math.PI * 2)
     ctx.fill()
 
+    // 封面图
     ctx.save()
     ctx.beginPath()
     ctx.arc(256, 256, 240, 0, Math.PI * 2)
@@ -61,6 +68,14 @@ function createCoverLabelCanvas(img) {
     ctx.drawImage(img, 16, 16, 480, 480)
     ctx.restore()
 
+    // 内圈装饰线
+    ctx.strokeStyle = 'rgba(255,255,255,0.3)'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(256, 256, 60, 0, Math.PI * 2)
+    ctx.stroke()
+
+    // 中心孔
     ctx.fillStyle = COLORS.VINYL
     ctx.beginPath()
     ctx.arc(256, 256, 30, 0, Math.PI * 2)
@@ -72,30 +87,33 @@ function createCoverLabelCanvas(img) {
 export default function VinylRecord() {
     const labelMeshRef = useRef()
     const coverImage = useMusicStore((state) => state.coverImage)
-
-    const labelTexture = useMemo(() => {
+    const [labelTexture, setLabelTexture] = useState(() => {
         const canvas = createDefaultLabelCanvas()
         return new THREE.CanvasTexture(canvas)
-    }, [])
+    })
 
     useEffect(() => {
-        if (coverImage && labelMeshRef.current) {
+        if (coverImage) {
             const img = new Image()
             img.crossOrigin = 'anonymous'
             img.onload = () => {
                 const canvas = createCoverLabelCanvas(img)
                 const newTexture = new THREE.CanvasTexture(canvas)
-                labelMeshRef.current.material.map = newTexture
-                labelMeshRef.current.material.needsUpdate = true
+                newTexture.colorSpace = THREE.SRGBColorSpace
+                setLabelTexture(newTexture)
+                if (labelMeshRef.current) {
+                    labelMeshRef.current.material.map = newTexture
+                    labelMeshRef.current.material.needsUpdate = true
+                }
             }
             img.src = coverImage
         }
     }, [coverImage])
 
     const grooves = useMemo(() => {
-        return Array.from({ length: 10 }, (_, i) => (
-            <mesh key={i} rotation={[Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
-                <torusGeometry args={[1.5 + i * 0.2, 0.015, 8, 128]} />
+        return Array.from({ length: 15 }, (_, i) => (
+            <mesh key={i} rotation={[Math.PI / 2, 0, 0]} position={[0, 0.055, 0]}>
+                <torusGeometry args={[1.6 + i * 0.12, 0.01, 8, 128]} />
                 <meshBasicMaterial color="#1a1a1a" />
             </mesh>
         ))
@@ -103,16 +121,28 @@ export default function VinylRecord() {
 
     return (
         <group>
-            <mesh>
+            {/* 黑胶主体 */}
+            <mesh castShadow receiveShadow>
                 <cylinderGeometry args={[SCENE.RECORD_RADIUS, SCENE.RECORD_RADIUS, 0.1, 128]} />
-                <meshStandardMaterial color={COLORS.VINYL} roughness={0.25} metalness={0.4} />
+                <meshStandardMaterial 
+                    color={COLORS.VINYL} 
+                    roughness={0.2} 
+                    metalness={0.3}
+                    envMapIntensity={0.5}
+                />
             </mesh>
 
+            {/* 唱片纹路 */}
             {grooves}
 
-            <mesh ref={labelMeshRef} position={[0, 0.06, 0]}>
-                <cylinderGeometry args={[1.4, 1.4, 0.12, 64]} />
-                <meshStandardMaterial map={labelTexture} roughness={0.3} />
+            {/* 唱片标签 */}
+            <mesh ref={labelMeshRef} position={[0, 0.055, 0]}>
+                <cylinderGeometry args={[1.4, 1.4, 0.11, 128]} />
+                <meshStandardMaterial 
+                    map={labelTexture} 
+                    roughness={0.4}
+                    metalness={0.1}
+                />
             </mesh>
         </group>
     )

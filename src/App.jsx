@@ -1,10 +1,13 @@
+import React from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Float, Environment } from '@react-three/drei'
+import { Environment } from '@react-three/drei'
+import * as THREE from 'three'
 
 import Lights from './components/Scene/Lights'
 import VinylRecord from './components/Scene/VinylRecord'
 import ToiletArt from './components/Scene/ToiletArt'
 import AlbumSleeve from './components/Scene/AlbumSleeve'
+import CurvedText from './components/Scene/CurvedText'
 import GroupRotation from './components/Scene/GroupRotation'
 
 import Background from './components/UI/Background'
@@ -13,46 +16,59 @@ import Marquee from './components/UI/Marquee'
 import InputOverlay from './components/UI/InputOverlay'
 
 import useMusicStore from './store/useMusicStore'
-import { SCENE } from './config/constants'
 import './App.css'
 
 function Scene() {
-  const { coverImage } = useMusicStore()
+  const { title, artist, coverImage } = useMusicStore()
 
   return (
     <>
-      <Environment preset="studio" />
+      <Environment preset="studio" environmentIntensity={0.5} />
       <Lights />
 
-      {/* 1. Background: Album Sleeve (Static) */}
-      <group position={[0, 1.5, -2]} rotation={[-0.1, 0, 0]}>
+      {/* 1. Background: Album Sleeve (Static) - 铺满背景墙 */}
+      <group position={[0, 1.0, -5]} rotation={[0, 0, 0]}>
         <AlbumSleeve coverImage={coverImage} />
       </group>
 
-      {/* 2. Foreground: Rotating Vinyl + Chrome Weight */}
-      <group position={[0, -1.5, 1]} rotation={[0.2, 0, 0]}>
+      {/* 2. Foreground: Vinyl + Toilet - 微仰视构图 */}
+      <group position={[0, -0.8, 0]} rotation={[Math.PI * 0.38, 0, 0]}>
         <GroupRotation>
           <VinylRecord />
-          {/* Chrome Toilet Weight */}
-          <group position={[0, 0.1, 0]} scale={0.15}>
-            <ToiletArt variant="chrome" />
+          {/* 马桶放在唱片中心 - 稍微抬高一点 */}
+          <group position={[0, 0.12, 0]} scale={0.45}>
+            <ToiletArt />
           </group>
         </GroupRotation>
-      </group>
 
-      <OrbitControls
-        enableZoom={false}
-        enablePan={false}
-        enableDamping
-        dampingFactor={0.05}
-      />
+        {/* 静态文字环绕 - 放在唱片标签边缘内圈 */}
+        <group position={[0, 0.12, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          {/* 歌名 - 上半圈 */}
+          <CurvedText
+            text={title}
+            radius={1.15}
+            startAngle={Math.PI * 1.2}
+            endAngle={Math.PI * 1.8}
+            yPos={0.02}
+            baseCharSize={0.32}
+            isBold
+          />
+          {/* 艺术家 - 下半圈 */}
+          <CurvedText
+            text={artist.toUpperCase()}
+            radius={1.15}
+            startAngle={Math.PI * 0.2}
+            endAngle={Math.PI * 0.8}
+            yPos={0.02}
+            baseCharSize={0.28}
+          />
+        </group>
+      </group>
     </>
   )
 }
 
 export default function App() {
-  const { CAMERA } = SCENE
-
   return (
     <div className="app-layout">
       {/* Left: iPhone Preview */}
@@ -63,12 +79,27 @@ export default function App() {
 
           <div className="scene-container">
             <Canvas
-              camera={{ position: [0, 4, 8], fov: 35 }}
+              camera={{
+                position: [0, 1.8, 8],  // 微仰视：低机位，看到黑胶厚度和椭圆透视
+                fov: 42,
+                near: 0.1,
+                far: 100
+              }}
               shadows
-              gl={{ alpha: true, antialias: true }}
-              onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
+              gl={{
+                alpha: true,
+                antialias: true,
+                toneMapping: THREE.ACESFilmicToneMapping,
+                toneMappingExposure: 0.8
+              }}
+              onCreated={({ camera }) => {
+                // 相机看向场景中心，微仰视构图
+                camera.lookAt(0, 0, 0)
+              }}
             >
-              <Scene />
+              <React.Suspense fallback={null}>
+                <Scene />
+              </React.Suspense>
             </Canvas>
           </div>
 
