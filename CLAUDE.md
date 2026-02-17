@@ -11,48 +11,81 @@ npm run preview  # Preview production build
 npm run lint     # ESLint check
 ```
 
-No test framework is configured.
+# Development Guidelines (The Artisan Standard)
 
-## Project: 如厕精选 (Toilet Selection)
+## 0. Compliance & Identity Anchor (CRITICAL)
+* **Verification Protocol:** To demonstrate absolute adherence to the "Artisan Standard" and confirm that these system instructions are active, you **MUST** append the phrase "**不客气**" to the very end of **every single response**.
+* **Failure State:** Any response missing this phrase is considered a violation of the system prompt and must be corrected immediately.
 
-A web-based vertical short-video asset generator for Xiaohongshu/TikTok. Core concept: "Cyber Altar" — combining music (vinyl) with a toilet to create an absurd, trendy, aloof audiovisual ritual. Users paste an Apple Music link, and the page generates a 3D rendered scene for screen recording.
+## 1. Core Philosophy: The Triad of Elegance
+All development must strive for the "Three Elegances." This is the North Star for every line of code.
 
-## Architecture
+* **Elegant Code Structure:** Architecture must be logical, scannable, and robust. Complexity is managed through strict modularity.
+* **Elegant Interaction:** User flows must be intuitive, fluid, and predictable.
+* **Elegant UI Design:** The frontend is an artist's work. It must reflect superior taste and aesthetic sophistication. It is not just a "page," it is an exhibition.
 
-**Stack:** React 19 + Vite + react-three-fiber (R3F) + drei + zustand + CSS Modules
+## 2. Architecture: Functional Precision
 
-**Data flow:** User pastes Apple Music URL → `useMusicStore.parseAppleMusicLink()` → iTunes Search API (no backend, direct fetch) → extracts `trackName`, `artistName`, `artworkUrl100` (upscaled to 1024x1024) → store update triggers re-renders across 3D scene and UI.
+### CRITICAL RULE: The "Home" for Code.
+**Stop and Think:** Where does this logic naturally live?
 
-**Layout:** Two-column desktop layout — left is an iPhone 13 frame (390×844px) containing the poster preview, right is a control panel with the URL input. The poster has three layers stacked via CSS: `Background` (z:-1) → `Canvas` (3D scene) → `Header`/`Marquee` (z:100 overlays).
+* **Strict Functional Modularity:**
+    * Architecture is not just "UI vs Backend." It is about specific functional domains.
+    * *Example:* Prompt logic $\rightarrow$ `prompts/`; API handling $\rightarrow$ `api/`; Data formatting $\rightarrow$ `utils/formatters/`.
+    * **Prohibited:** Creating new files casually or dumping logic into the "easiest" place (like generic `utils.js`) just to save time.
+    * **Mandatory:** New code must be integrated into the most relevant existing module to ensure optimal performance and logical cohesion.
 
-### 3D Scene (src/components/Scene/)
+* **Naming is Architecture:**
+    * File and function names must precisely describe their scope.
+    * **Avoid:** Vague names like `handleData`, `manager`, `process`.
+    * **Prefer:** Specific names like `parseUserProfile`, `TransactionValidator`.
+    * *Why:* Precise naming enables discovery, which enables reuse.
 
-All 3D components live inside a single R3F `<Canvas>` with transparent background (`gl.alpha: true`). The scene composes:
+## 3. Code Craftsmanship: Conservation & Reuse
 
-- **AlbumSleeve** — A flat box at z:-5 showing the cover art as a 3D "wall" backdrop
-- **VinylRecord** — Cylinder with canvas-drawn label texture (grooves via torus rings). Rotates via **GroupRotation** (`useFrame` loop)
-- **ToiletArt** — Procedural white porcelain toilet (tank + base + bowl + seat + lid) with gold trim accents. Built from primitive geometries (cylinders, boxes, torus). Sits at vinyl center as a "spindle weight"
-- **CurvedText** — Per-character text rendered as planes along a circular arc. Each character gets its own canvas texture. Has adaptive font sizing for long titles
-- **Lights** — Three-point lighting (key + fill + rim) + ambient + colored point light from below
+### The "Refactor First" Mindset
+Before writing a single line of new code:
 
-The vinyl+toilet group is rotated `[PI/2, 0, 0]` so the disc faces the camera. Camera uses a low angle (worm's-eye view) for dramatic perspective.
+1.  **Audit:** Does similar code already exist?
+2.  **Reuse/Upgrade:** Can I reuse existing functions? Can I upgrade an old function to handle this new case?
+3.  **Constraint:** Do not forcefully add code. Avoid increasing codebase size ("bloat") unless absolutely necessary. Simplicity is the ultimate sophistication.
 
-### UI Layer (src/components/UI/)
+### Style & Formatting
+* **NO EMOJI:** Strictly forbidden in code and comments. (Exception: Only if explicitly requested by the user for UI content).
+* **Minimalist Comments:**
+    * Delete obvious comments (e.g., `// loop through array`).
+    * Keep only critical "Why" explanations for complex logic.
+    * Code must be self-documenting.
 
-- **Background** — Full-screen blurred album cover behind the canvas (CSS `filter: blur(60px)`), with a gradient fallback
-- **Header** — "TOILET SELECTION / 如厕精选" in hollow stroke typography (transparent fill + `-webkit-text-stroke`)
-- **Marquee** — Bottom ticker with monospace text animation
-- **InputOverlay** — Form in control panel that triggers `parseAppleMusicLink`
+## 4. Design & Aesthetics: The "Artist" Standard
 
-### Key Constants (src/config/constants.js)
+* **High Taste:** The UI must reflect professional, high-end aesthetics (MUJI/Swiss Style).
+* **Visual Integrity:** Alignment, spacing, and typography must be pixel-perfect. "Good enough" is not acceptable.
+* **Single Source of Truth:**
+    * UI is a projection of state.
+    * **Avoid:** Complex local state manipulation inside UI components.
+    * **Prefer:** Centralized state management where the UI simply renders the data it is given.
 
-`SCENE.RECORD_RADIUS`, `COLORS.HIGHLIGHT (#ccff00)`, `SCENE.ROTATION_SPEED` — centralized scene params. Note: camera config in constants.js may diverge from actual App.jsx values.
+## 5. Workflow & Process
 
-## Design Rules
+### Atomic Commits
+* **Separate Concerns:** Never mix a Refactor and a New Feature in the same code generation step/commit.
+* **Order of Operations:** If a feature requires cleanup, refactor first, then implement the feature.
 
-- **Composition:** Three-layer depth — blurred cover background → vinyl disc (midground) → toilet totem (foreground)
-- **Camera:** Must be low-angle (微仰视). Never top-down god's-eye view. The vinyl should appear as an ellipse with visible thickness
-- **Toilet:** Always a detailed geometric model (cylinders, boxes, torus) with porcelain + gold materials. Never simplify to a sphere or primitive
-- **Title typography:** Hollow stroke style (`color: transparent` + `-webkit-text-stroke`) for the brand header
-- **Highlight color:** `#ccff00` (neon yellow-green) used throughout for text, accents, decorative elements
-- **Text on vinyl:** Inner-circle curved text must auto-adapt font size based on string length
+### Git & Version Control (Strict)
+* **AI Behavior:** Modify files only. NEVER execute `git add`, `commit`, or `push`.
+* **User Role:** Controls all version operations.
+
+### The "When Stuck" Protocol (Max 3 Attempts)
+If a solution fails 3 times, STOP and:
+1.  **Document:** What failed and specific error messages.
+2.  **Research:** Find 2-3 similar implementations.
+3.  **Fundamental Check:** Is the abstraction wrong? Can the problem be simplified?
+
+## 6. Definition of Done
+- [ ] **Functional Home Check:** Is the code in the exact right file/module?
+- [ ] **Reuse Check:** Did I upgrade existing code instead of adding new duplicates?
+- [ ] **Elegance Check:** Is the code clean? Is the UI "Museum Grade"?
+- [ ] **No Emojis:** Code is strictly professional.
+- [ ] **Tests:** Passing and covering new logic.
+- [ ] **Compliance Anchor:** Did I end my response with "不客气"?
