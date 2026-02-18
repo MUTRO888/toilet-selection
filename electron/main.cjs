@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, desktopCapturer } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog } = require('electron')
 const path = require('path')
 
 let mainWindow
@@ -25,7 +25,7 @@ function createWindow() {
 app.whenReady().then(() => {
     createWindow()
     const handlers = require('./ipc-handlers.cjs')
-    handlers.register(ipcMain, () => mainWindow, dialog, desktopCapturer)
+    handlers.register(ipcMain, () => mainWindow, dialog)
 })
 
 app.on('window-all-closed', () => app.quit())

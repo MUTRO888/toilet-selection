@@ -3,35 +3,17 @@ const fs = require('fs')
 const os = require('os')
 const appleMusic = require('./apple-music.cjs')
 const { captureAudio } = require('./audio-capture.cjs')
-const { processVideo } = require('./ffmpeg-processor.cjs')
+const { createFrameEncoder, mergeVideoAudio } = require('./ffmpeg-processor.cjs')
 
-function register(ipcMain, getWindow, dialog, desktopCapturer) {
-    let recordedBufferResolve = null
+function register(ipcMain, getWindow, dialog) {
     let cancelled = false
-    let activeProgressInterval = null
-
-    ipcMain.handle('recorded-buffer', (_, buffer) => {
-        console.log('[export] Received buffer, type:', typeof buffer, 'constructor:', buffer?.constructor?.name, 'byteLength:', buffer?.byteLength ?? buffer?.length ?? 'N/A')
-        if (recordedBufferResolve) {
-            let buf
-            if (Buffer.isBuffer(buffer)) {
-                buf = buffer
-            } else if (buffer instanceof Uint8Array || buffer instanceof ArrayBuffer) {
-                buf = Buffer.from(buffer)
-            } else {
-                buf = Buffer.from(new Uint8Array(buffer))
-            }
-            console.log('[export] Converted buffer size:', buf.length, 'first bytes:', buf.slice(0, 4).toString('hex'))
-            recordedBufferResolve(buf)
-            recordedBufferResolve = null
-        }
-    })
+    let activeCaptureInterval = null
 
     ipcMain.handle('cancel-export', () => {
         cancelled = true
-        if (activeProgressInterval) {
-            clearInterval(activeProgressInterval)
-            activeProgressInterval = null
+        if (activeCaptureInterval) {
+            clearInterval(activeCaptureInterval)
+            activeCaptureInterval = null
         }
         appleMusic.stop().catch(() => {})
     })
@@ -41,12 +23,13 @@ function register(ipcMain, getWindow, dialog, desktopCapturer) {
         const { songName, artistName, startSeconds, endSeconds, containerRect } = params
         const duration = endSeconds - startSeconds
         const bufferTime = 1.5
+        const fps = 30
         cancelled = false
 
         const tmpDir = path.join(os.tmpdir(), `toilet-selection-${Date.now()}`)
         fs.mkdirSync(tmpDir, { recursive: true })
 
-        const videoPath = path.join(tmpDir, 'video.webm')
+        const videoPath = path.join(tmpDir, 'video.mp4')
         const audioPath = path.join(tmpDir, 'audio.m4a')
         const outputPath = path.join(tmpDir, 'output.mp4')
 
@@ -58,108 +41,83 @@ function register(ipcMain, getWindow, dialog, desktopCapturer) {
 
         try {
             sendProgress('preparing', 5)
-            console.log('[export] Step 1: Getting window sources...')
 
-            const sources = await desktopCapturer.getSources({ types: ['window'] })
-            const windowSource = sources.find(s => s.name === win.getTitle()) || sources[0]
-            console.log('[export] Step 2: Found source:', windowSource?.name, windowSource?.id)
+            const captureRect = {
+                x: Math.round(containerRect.x),
+                y: Math.round(containerRect.y),
+                width: Math.round(containerRect.width),
+                height: Math.round(containerRect.height),
+            }
+            console.log('[export] Capture rect (CSS):', captureRect)
 
             if (cancelled) throw new Error('Cancelled')
 
-            sendProgress('starting', 10)
-            win.webContents.send('start-recording', { sourceId: windowSource.id })
-            console.log('[export] Step 3: Sent start-recording to renderer')
+            sendProgress('playing', 10)
+            console.log('[export] Playing + seeking Apple Music:', songName, 'to', Math.round(startSeconds), 's')
+            const actualPos = await appleMusic.playFromPosition(songName, artistName, startSeconds)
+            console.log('[export] Apple Music confirmed at position:', actualPos)
 
-            await sleep(800)
             if (cancelled) throw new Error('Cancelled')
 
-            console.log('[export] Step 4: Starting audio capture...')
+            sendProgress('recording', 20)
+            console.log('[export] Starting audio capture + frame encoder...')
+
             const audioCapturePromise = captureAudio(duration + bufferTime, audioPath)
                 .catch((err) => {
                     console.warn('[export] Audio capture error (non-fatal):', err.message)
                     return null
                 })
 
-            await sleep(300)
-            if (cancelled) throw new Error('Cancelled')
+            const encoder = createFrameEncoder({ fps, outputPath: videoPath })
 
-            sendProgress('playing', 15)
-            console.log('[export] Step 5: Playing Apple Music:', songName, artistName, startSeconds)
-
-            await appleMusic.playFrom(songName, artistName, startSeconds)
-            console.log('[export] Step 6: Apple Music playing')
-
-            await sleep(1000)
-            if (cancelled) throw new Error('Cancelled')
-
-            sendProgress('recording', 20)
-            console.log('[export] Step 7: Recording for', duration + bufferTime, 'seconds...')
-
-            const totalRecordTime = (duration + bufferTime) * 1000
             const recordStartTime = Date.now()
-            activeProgressInterval = setInterval(() => {
-                if (cancelled) return
+            const totalRecordMs = duration * 1000
+            let frameCount = 0
+
+            activeCaptureInterval = setInterval(async () => {
+                if (cancelled || !encoder.stdin.writable) return
+                try {
+                    const image = await win.webContents.capturePage(captureRect)
+                    const jpeg = image.toJPEG(92)
+                    if (encoder.stdin.writable) {
+                        encoder.stdin.write(jpeg)
+                        frameCount++
+                    }
+                } catch {}
+
                 const elapsed = Date.now() - recordStartTime
-                const pct = 20 + (elapsed / totalRecordTime) * 55
-                sendProgress('recording', Math.min(pct, 75))
-            }, 500)
+                const pct = 20 + (elapsed / totalRecordMs) * 50
+                sendProgress('recording', Math.min(pct, 70))
+            }, 1000 / fps)
 
-            await sleep(totalRecordTime)
+            await sleep(totalRecordMs)
 
-            clearInterval(activeProgressInterval)
-            activeProgressInterval = null
+            clearInterval(activeCaptureInterval)
+            activeCaptureInterval = null
+            console.log('[export] Frame capture done:', frameCount, 'frames captured')
+
+            encoder.stdin.end()
+            await encoder.promise
+            console.log('[export] Frame encoding complete')
 
             if (cancelled) throw new Error('Cancelled')
 
             await appleMusic.stop()
-            console.log('[export] Step 8: Apple Music stopped')
-
-            win.webContents.send('stop-recording')
-
-            const webmBuffer = await new Promise((resolve) => {
-                recordedBufferResolve = resolve
-                setTimeout(() => {
-                    if (recordedBufferResolve) {
-                        recordedBufferResolve = null
-                        resolve(null)
-                    }
-                }, 10000)
-            })
-
-            if (!webmBuffer) {
-                throw new Error('Failed to receive recorded video buffer')
-            }
-
-            const alignedBuffer = alignEBMLHeader(webmBuffer)
-            fs.writeFileSync(videoPath, alignedBuffer)
-            console.log('[export] Step 9: Video buffer written, size:', alignedBuffer.length, 'bytes, first bytes:', alignedBuffer.slice(0, 4).toString('hex'))
-
-            await audioCapturePromise
-            console.log('[export] Step 10: Audio capture finished')
-
-            if (cancelled) throw new Error('Cancelled')
+            console.log('[export] Apple Music stopped')
 
             sendProgress('processing', 75)
 
-            const dpr = containerRect.dpr || 2
-            const cropRect = {
-                x: Math.round(containerRect.x * dpr),
-                y: Math.round(containerRect.y * dpr),
-                w: Math.round(containerRect.width * dpr),
-                h: Math.round(containerRect.height * dpr),
-            }
+            await audioCapturePromise
+            console.log('[export] Audio capture finished')
 
-            await processVideo({
-                videoPath,
-                audioPath,
-                cropRect,
-                duration,
-                outputPath,
-                onProgress: (pct) => {
-                    sendProgress('processing', 75 + pct * 20)
-                },
-            })
-            console.log('[export] Step 11: FFmpeg processing done')
+            if (fs.existsSync(audioPath)) {
+                console.log('[export] Merging video + audio...')
+                await mergeVideoAudio({ videoPath, audioPath, duration, outputPath })
+                console.log('[export] Merge complete')
+            } else {
+                console.warn('[export] No audio file, using video only')
+                fs.copyFileSync(videoPath, outputPath)
+            }
 
             sendProgress('saving', 95)
 
@@ -178,12 +136,11 @@ function register(ipcMain, getWindow, dialog, desktopCapturer) {
             return { success: true }
 
         } catch (err) {
-            if (activeProgressInterval) {
-                clearInterval(activeProgressInterval)
-                activeProgressInterval = null
+            if (activeCaptureInterval) {
+                clearInterval(activeCaptureInterval)
+                activeCaptureInterval = null
             }
             appleMusic.stop().catch(() => {})
-            win.webContents.send('stop-recording')
 
             console.error('[export-video] Error:', err.message)
             cleanup(tmpDir)
@@ -206,22 +163,7 @@ function sleep(ms) {
 function cleanup(dir) {
     try {
         fs.rmSync(dir, { recursive: true, force: true })
-    } catch {
-        // best-effort cleanup
-    }
-}
-
-function alignEBMLHeader(buf) {
-    // WebM/EBML magic: 0x1A 0x45 0xDF 0xA3
-    const ebmlMagic = Buffer.from([0x1a, 0x45, 0xdf, 0xa3])
-    if (buf.slice(0, 4).equals(ebmlMagic)) return buf
-
-    const idx = buf.indexOf(ebmlMagic)
-    if (idx > 0 && idx < 16) {
-        console.log('[export] Stripping', idx, 'garbage bytes before EBML header')
-        return buf.slice(idx)
-    }
-    return buf
+    } catch {}
 }
 
 module.exports = { register }

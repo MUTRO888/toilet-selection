@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import useMusicStore from '../../store/useMusicStore'
 import AudioSegmentSelector from './AudioSegmentSelector'
 import styles from './ExportControls.module.css'
@@ -22,57 +22,10 @@ export default function ExportControls() {
         setExportState, setExportProgress, resetExport,
     } = useMusicStore()
 
-    const recorderRef = useRef(null)
-    const chunksRef = useRef([])
     const [errorDetail, setErrorDetail] = useState(null)
+
     useEffect(() => {
         if (!window.electronAPI) return
-
-        window.electronAPI.onStartRecording(async ({ sourceId }) => {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    audio: false,
-                    video: {
-                        mandatory: {
-                            chromeMediaSource: 'desktop',
-                            chromeMediaSourceId: sourceId,
-                        },
-                    },
-                })
-
-                chunksRef.current = []
-                const recorder = new MediaRecorder(stream, {
-                    mimeType: 'video/webm;codecs=vp8',
-                })
-
-                recorder.ondataavailable = (e) => {
-                    if (e.data.size > 0) chunksRef.current.push(e.data)
-                }
-
-                recorder.start()
-                recorderRef.current = recorder
-            } catch (err) {
-                console.error('MediaRecorder setup failed:', err)
-            }
-        })
-
-        window.electronAPI.onStopRecording(async () => {
-            const recorder = recorderRef.current
-            if (!recorder) return
-
-            await new Promise((resolve) => {
-                recorder.onstop = resolve
-                recorder.stop()
-            })
-
-            recorder.stream.getTracks().forEach(t => t.stop())
-            recorderRef.current = null
-
-            const blob = new Blob(chunksRef.current, { type: 'video/webm' })
-            const arrayBuffer = await blob.arrayBuffer()
-            window.electronAPI.sendRecordedBuffer(arrayBuffer)
-            chunksRef.current = []
-        })
 
         window.electronAPI.onExportProgress(({ stage, percent }) => {
             setExportState(stage)
@@ -92,7 +45,6 @@ export default function ExportControls() {
             y: rect.y,
             width: rect.width,
             height: rect.height,
-            dpr: window.devicePixelRatio || 2,
         }
 
         setExportState('preparing')
@@ -107,8 +59,7 @@ export default function ExportControls() {
             containerRect,
         })
 
-        if (!result.success) {
-            console.error('Export failed:', result.error)
+        if (!result.success && result.error !== 'Cancelled') {
             if (result.error?.includes('SONG_NOT_IN_LIBRARY')) {
                 setErrorDetail(`"${title}" not found in Music.app library. Add the song to your library first.`)
             } else {

@@ -16,9 +16,10 @@ function escapeAppleScript(str) {
     return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }
 
-async function playFrom(songName, artistName, startSeconds) {
+async function playFromPosition(songName, artistName, startSeconds) {
     const name = escapeAppleScript(songName)
     const artist = escapeAppleScript(artistName)
+    const position = Math.round(startSeconds)
 
     const script = `
 tell application "Music"
@@ -31,17 +32,26 @@ tell application "Music"
     end if
     set targetTrack to item 1 of matchedTracks
     play targetTrack
-    delay 0.5
-    set player position to ${startSeconds}
-    delay 0.3
-    set player position to ${startSeconds}
+    repeat 30 times
+        if player state is playing then exit repeat
+        delay 0.1
+    end repeat
+    repeat 10 times
+        set player position to ${position}
+        delay 0.3
+        set curPos to player position as integer
+        if curPos >= ${Math.max(0, position - 2)} then exit repeat
+    end repeat
+    return (player position as integer) as string
 end tell`
 
-    return runAppleScript(script)
+    const actualPos = await runAppleScript(script)
+    console.log('[apple-music] Requested position:', position, 'Actual position:', actualPos)
+    return parseInt(actualPos, 10)
 }
 
 async function stop() {
     return runAppleScript('tell application "Music" to stop')
 }
 
-module.exports = { playFrom, stop }
+module.exports = { playFromPosition, stop }

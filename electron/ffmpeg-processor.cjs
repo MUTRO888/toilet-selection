@@ -1,66 +1,86 @@
 const { spawn } = require('child_process')
-const path = require('path')
 
 function getFFmpegPath() {
     try {
         const staticPath = require('ffmpeg-static')
-        console.log('[ffmpeg] ffmpeg-static path:', staticPath)
         return staticPath
     } catch {
-        console.log('[ffmpeg] ffmpeg-static not found, using system ffmpeg')
         return 'ffmpeg'
     }
 }
 
-function processVideo({ videoPath, audioPath, cropRect, duration, outputPath, onProgress }) {
-    const { x, y, w, h } = cropRect
+function createFrameEncoder({ fps, outputPath }) {
     const ffmpegPath = getFFmpegPath()
+    const args = [
+        '-y',
+        '-f', 'image2pipe',
+        '-framerate', String(fps),
+        '-i', 'pipe:0',
+        '-vf', 'scale=1080:-2',
+        '-c:v', 'libx264',
+        '-pix_fmt', 'yuv420p',
+        '-preset', 'fast',
+        '-crf', '18',
+        outputPath,
+    ]
 
+    console.log('[ffmpeg] Frame encoder:', ffmpegPath, args.join(' '))
+    const proc = spawn(ffmpegPath, args)
+
+    let stderr = ''
+    proc.stderr.on('data', (chunk) => {
+        stderr += chunk.toString()
+    })
+
+    const promise = new Promise((resolve, reject) => {
+        proc.on('close', (code) => {
+            if (code === 0) {
+                resolve()
+            } else {
+                console.error('[ffmpeg] Frame encoder stderr:\n', stderr)
+                reject(new Error(`Frame encoder exited with code ${code}`))
+            }
+        })
+        proc.on('error', reject)
+    })
+
+    return { stdin: proc.stdin, promise }
+}
+
+function mergeVideoAudio({ videoPath, audioPath, duration, outputPath, onProgress }) {
+    const ffmpegPath = getFFmpegPath()
     const args = [
         '-y',
         '-i', videoPath,
         '-i', audioPath,
-        '-filter:v', `crop=${w}:${h}:${x}:${y},scale=1080:-2`,
-        '-c:v', 'libx264',
-        '-c:a', 'aac',
-        '-preset', 'fast',
-        '-crf', '18',
+        '-c', 'copy',
         '-movflags', '+faststart',
         '-t', String(duration),
         '-shortest',
         outputPath,
     ]
 
-    console.log('[ffmpeg] Running:', ffmpegPath, args.join(' '))
+    console.log('[ffmpeg] Merge:', ffmpegPath, args.join(' '))
 
     return new Promise((resolve, reject) => {
         const proc = spawn(ffmpegPath, args)
 
         let stderr = ''
         proc.stderr.on('data', (chunk) => {
-            const text = chunk.toString()
-            stderr += text
-
-            const match = text.match(/time=(\d+):(\d+):(\d+\.\d+)/)
-            if (match && onProgress && duration > 0) {
-                const secs = parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseFloat(match[3])
-                onProgress(Math.min(secs / duration, 1))
-            }
+            stderr += chunk.toString()
         })
 
         proc.on('close', (code) => {
             if (code === 0) {
                 resolve()
             } else {
-                console.error('[ffmpeg] Full stderr output:\n', stderr)
-                reject(new Error(`ffmpeg exited with code ${code}`))
+                console.error('[ffmpeg] Merge stderr:\n', stderr)
+                reject(new Error(`Merge exited with code ${code}`))
             }
         })
 
-        proc.on('error', (err) => {
-            reject(new Error(`ffmpeg spawn error: ${err.message}`))
-        })
+        proc.on('error', reject)
     })
 }
 
-module.exports = { processVideo }
+module.exports = { createFrameEncoder, mergeVideoAudio }
