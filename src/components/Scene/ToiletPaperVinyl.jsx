@@ -59,19 +59,16 @@ const PaperTopMaterial = {
 
     void main() {
       float dist = length(vPosition.xy);
-      
-      // Clearer paper layers (lower frequency, higher contrast)
-      float freq = 120.0; 
+
+      float freq = 120.0;
       float pattern = sin(dist * freq);
-      
+
       float layer = smoothstep(-0.4, 0.4, pattern);
-      
-      // Base color with subtle radial gradient for depth
+
       vec3 baseColor = mix(uColorDark, uColorLight, layer);
       float vignette = smoothstep(0.0, uRadius, dist);
       vec3 color = mix(baseColor, baseColor * 0.95, vignette);
-      
-      // Sharp rim shadow
+
       float rim = smoothstep(uRadius - 0.2, uRadius, dist);
       color = mix(color, color * 0.85, rim * 0.5);
 

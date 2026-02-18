@@ -1,9 +1,44 @@
 import { create } from 'zustand'
 
+function extractDominantColor(imageUrl) {
+    return new Promise((resolve) => {
+        const img = new Image()
+        img.crossOrigin = 'Anonymous'
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas')
+                canvas.width = 8
+                canvas.height = 8
+                const ctx = canvas.getContext('2d', { willReadFrequently: true })
+                ctx.drawImage(img, 0, 0, 8, 8)
+                const { data } = ctx.getImageData(0, 0, 8, 8)
+
+                let bestR = 200, bestG = 200, bestB = 200, maxSat = -1
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i], g = data[i + 1], b = data[i + 2]
+                    const max = Math.max(r, g, b)
+                    const min = Math.min(r, g, b)
+                    const sat = max === 0 ? 0 : (max - min) / max
+                    if (sat > maxSat) {
+                        maxSat = sat
+                        bestR = r; bestG = g; bestB = b
+                    }
+                }
+                resolve({ r: bestR, g: bestG, b: bestB })
+            } catch {
+                resolve(null)
+            }
+        }
+        img.onerror = () => resolve(null)
+        img.src = imageUrl
+    })
+}
+
 const useMusicStore = create((set) => ({
   title: 'Smooth Operator',
   artist: 'Sade',
   coverImage: null,
+  themeColor: null,
   reviewText: 'Toilet Review: This track is smoother than 2-ply.',
   isLoading: false,
 
@@ -15,7 +50,14 @@ const useMusicStore = create((set) => ({
   exportProgress: 0,
 
   setMusicInfo: (title, artist) => set({ title, artist }),
-  setCoverImage: (coverImage) => set({ coverImage }),
+  setCoverImage: (coverImage) => {
+    set({ coverImage })
+    if (coverImage) {
+      extractDominantColor(coverImage).then(c => set({ themeColor: c }))
+    } else {
+      set({ themeColor: null })
+    }
+  },
   setReviewText: (reviewText) => set({ reviewText }),
   setLoading: (isLoading) => set({ isLoading }),
 
@@ -54,6 +96,10 @@ const useMusicStore = create((set) => ({
           segmentEnd: Math.min(30, trackDuration),
           isLoading: false,
         })
+
+        if (artwork) {
+          extractDominantColor(artwork).then(c => set({ themeColor: c }))
+        }
       } else {
         throw new Error('No results found')
       }

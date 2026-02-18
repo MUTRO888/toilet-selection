@@ -5,35 +5,9 @@
     overflow: hidden;
 }
 
-.coverBlur {
+.fill {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    filter: blur(50px) brightness(0.55) saturate(1.5);
-    transform: scale(1.3);
-    animation: breathe 10s ease-in-out infinite alternate;
-    transition: opacity 0.8s ease;
-}
-
-.fallback {
-    width: 100%;
-    height: 100%;
-    background: #fdfbf7;
-    /* Porcelain Base */
-    background-image:
-        /* The Holy Light - Top Center Glow */
-        radial-gradient(circle at 50% 0%, rgba(255, 250, 240, 1.0) 0%, rgba(253, 251, 247, 0) 60%),
-        /* Subtle Warmth */
-        radial-gradient(circle at 50% 30%, rgba(255, 248, 220, 0.4) 0%, transparent 50%);
-    animation: breathe 8s ease-in-out infinite alternate;
-}
-
-@keyframes breathe {
-    0% {
-        transform: scale(1.0);
-    }
-
-    100% {
-        transform: scale(1.15);
-    }
+    background: rgb(var(--bg-tint-rgb, 253 251 247));
+    transition: background 0.8s ease;
 }
