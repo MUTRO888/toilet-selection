@@ -1,6 +1,6 @@
 .container {
     position: absolute;
-    bottom: 64px;
+    bottom: 62px;
     left: 0;
     width: 100%;
     padding: 0 44px;
@@ -26,6 +26,7 @@
     line-height: 1.8;
     color: #333;
     text-align: center;
+    text-indent: 0;
     max-width: 260px;
     font-weight: 300;
     display: -webkit-box;

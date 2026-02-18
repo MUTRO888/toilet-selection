@@ -7,7 +7,7 @@ export default function ReviewDisplay() {
     return (
         <div className={styles.container}>
             <div className={styles.label}>厕评</div>
-            <p className={styles.text}>{reviewText || "Listening..."}</p>
+            <p className={styles.text}>{reviewText?.trim() || "Listening..."}</p>
         </div>
     )
 }
