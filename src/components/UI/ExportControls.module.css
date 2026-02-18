@@ -1,0 +1,73 @@
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.progressWrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.progressTrack {
+    width: 100%;
+    height: 2px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 1px;
+    overflow: hidden;
+}
+
+.progressFill {
+    height: 100%;
+    background: #D4AF37;
+    border-radius: 1px;
+    transition: width 0.1s linear;
+}
+
+.progressLabel {
+    font-family: "Lato", sans-serif;
+    font-size: 10px;
+    color: #888;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.errorText {
+    font-family: "Lato", sans-serif;
+    font-size: 11px;
+    color: #c44;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+.button {
+    padding: 0 20px;
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 1px;
+    background: transparent;
+    color: #555;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: "Lato", sans-serif;
+    transition: all 0.2s;
+    white-space: nowrap;
+    text-transform: uppercase;
+    height: 32px;
+}
+
+.button:hover:not(:disabled) {
+    background: #333;
+    color: #fff;
+    border-color: #333;
+}
+
+.button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}

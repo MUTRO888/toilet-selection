@@ -21,6 +21,10 @@
     will-change: transform;
 }
 
+.paused {
+    animation-play-state: paused;
+}
+
 @keyframes marquee {
     0% {
         transform: translateX(0);

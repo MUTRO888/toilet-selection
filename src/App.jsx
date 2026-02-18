@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
 
@@ -13,6 +13,7 @@ import Marquee from './components/UI/Marquee'
 import TrackInfo from './components/UI/TrackInfo'
 import ReviewDisplay from './components/UI/ReviewDisplay'
 import InputOverlay from './components/UI/InputOverlay'
+import ExportControls from './components/UI/ExportControls'
 
 import useMusicStore from './store/useMusicStore'
 import './App.css'
@@ -46,9 +47,13 @@ function ReviewInput() {
 export default function App() {
     const coverImage = useMusicStore((state) => state.coverImage)
 
+    const handleCanvasCreated = useCallback(({ camera }) => {
+        camera.lookAt(0, -0.5, 0)
+    }, [])
+
     return (
         <div className="app-layout">
-            <div className="iphone-container">
+            <div className="iphone-container" id="phone-container">
                 <div className="poster-container">
                     <Background />
 
@@ -64,12 +69,10 @@ export default function App() {
                             gl={{
                                 alpha: true,
                                 antialias: true,
-                                toneMapping: THREE.ReinhardToneMapping, // Softer tone mapping
+                                toneMapping: THREE.ReinhardToneMapping,
                                 toneMappingExposure: 1.0
                             }}
-                            onCreated={({ camera }) => {
-                                camera.lookAt(0, -0.5, 0)
-                            }}
+                            onCreated={handleCanvasCreated}
                         >
                             <React.Suspense fallback={null}>
                                 <Scene coverImage={coverImage} />
@@ -107,6 +110,10 @@ export default function App() {
                     <span className="section-label">Toilet Review</span>
                     <ReviewInput />
                 </div>
+
+                <div className="divider" />
+
+                <ExportControls />
             </div>
         </div>
     )

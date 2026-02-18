@@ -5,7 +5,7 @@ export default function Background() {
     const coverImage = useMusicStore((state) => state.coverImage)
 
     return (
-        <div className={styles.background}>
+        <div className={styles.background} data-export-layer="background">
             {coverImage ? (
                 <img
                     src={coverImage}
