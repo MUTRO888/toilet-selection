@@ -1,48 +1,33 @@
 .wrap {
     position: absolute;
-    top: 22%;
+    bottom: 148px;
     left: 0;
     width: 100%;
-    z-index: 100;
+    z-index: 90;
     pointer-events: none;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
-    padding: 0 24px;
-}
-
-.cover {
-    width: 140px;
-    height: 140px;
-    border-radius: 6px;
-    object-fit: cover;
-    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.meta {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    padding: 0 36px;
 }
 
 .title {
-    font-size: 22px;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: -0.5px;
+    font-family: "Cinzel", serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
     text-align: center;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
     line-height: 1.2;
-    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.6);
 }
 
 .artist {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.55);
-    font-weight: 600;
-    text-align: center;
-    letter-spacing: 0.5px;
-    text-shadow: 0 1px 10px rgba(0, 0, 0, 0.5);
+    font-family: "Lato", sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 4px;
 }

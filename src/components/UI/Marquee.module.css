@@ -1,29 +1,31 @@
 .marquee {
-    background: #ccff00;
-    color: #000;
-    padding: 8px 0;
-    font-weight: 900;
-    font-size: 11px;
+    background: transparent;
+    color: #aaa;
+    padding: 14px 0;
+    font-weight: 400;
+    font-size: 9px;
     white-space: nowrap;
     overflow: hidden;
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     position: absolute;
     bottom: 0;
     width: 100%;
     z-index: 100;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: "Noto Serif SC", "Lato", sans-serif;
 }
 
 .content {
     display: inline-block;
-    animation: marquee 14s linear infinite;
+    animation: marquee 60s linear infinite;
+    will-change: transform;
 }
 
 @keyframes marquee {
     0% {
         transform: translateX(0);
     }
+
     100% {
         transform: translateX(-50%);
     }

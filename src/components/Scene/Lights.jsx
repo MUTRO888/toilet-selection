@@ -1,57 +1,41 @@
+import { Environment } from '@react-three/drei'
+
 export default function Lights() {
     return (
         <>
-            {/* Key light — warm white, strong for paper surface */}
-            <directionalLight
-                position={[5, 8, 8]}
-                intensity={1.0}
+            {/* Soft Top Light - Main Illumination without harsh specular */}
+            <rectAreaLight
+                width={10}
+                height={10}
                 color="#ffffff"
+                intensity={1.0}
+                position={[0, 8, 0]}
+                lookAt={[0, 0, 0]}
+            />
+
+            {/* Raking Light - Low angle to catch texture of paper layers */}
+            <directionalLight
+                position={[5, 2, 5]}
+                intensity={0.6}
+                color="#fffcf5"
                 castShadow
                 shadow-mapSize={[2048, 2048]}
-                shadow-camera-near={0.1}
-                shadow-camera-far={50}
-                shadow-camera-left={-10}
-                shadow-camera-right={10}
-                shadow-camera-top={10}
-                shadow-camera-bottom={-10}
-                shadow-bias={-0.001}
+                shadow-bias={-0.0001}
+                shadow-normalBias={0.02}
             />
 
-            {/* Fill light — cool tint */}
+            {/* Fill - Very soft cool fill */}
             <directionalLight
-                position={[-6, 4, 4]}
-                intensity={0.35}
-                color="#e8e8ff"
-            />
-
-            {/* Rim light — warm backlight for edge definition */}
-            <directionalLight
-                position={[0, 6, -8]}
+                position={[-5, 4, -2]}
                 intensity={0.4}
-                color="#fff8e7"
+                color="#f0f2f5"
             />
 
-            <hemisphereLight args={['#ffffff', '#4d4dff', 0.2]} />
+            {/* Ambient - Base brightness */}
+            <ambientLight intensity={0.5} color="#ffffff" />
 
-            <ambientLight intensity={0.15} />
-
-            {/* Neon underglow — brand color on white paper */}
-            <pointLight
-                position={[0, -2, 2]}
-                intensity={2.0}
-                color="#ccff00"
-                distance={8}
-                decay={2}
-            />
-
-            {/* Blue accent — subtle color contrast */}
-            <pointLight
-                position={[2, 0, 3]}
-                intensity={0.4}
-                color="#4d4dff"
-                distance={8}
-                decay={2}
-            />
+            {/* Subtle Environment for non-metallic reflections */}
+            <Environment preset="city" blur={1} />
         </>
     )
 }

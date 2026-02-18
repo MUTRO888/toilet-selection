@@ -18,21 +18,21 @@
 .fallback {
     width: 100%;
     height: 100%;
-    background:
-        radial-gradient(ellipse at 50% 20%, rgba(204, 255, 0, 0.04) 0%, transparent 50%),
-        radial-gradient(ellipse at 70% 80%, rgba(77, 77, 255, 0.06) 0%, transparent 40%),
-        linear-gradient(170deg,
-            #0a0a0f 0%,
-            #0d0d18 35%,
-            #111122 65%,
-            #0a0a10 100%);
-    animation: breathe 10s ease-in-out infinite alternate;
+    background: #fdfbf7;
+    /* Porcelain Base */
+    background-image:
+        /* The Holy Light - Top Center Glow */
+        radial-gradient(circle at 50% 0%, rgba(255, 250, 240, 1.0) 0%, rgba(253, 251, 247, 0) 60%),
+        /* Subtle Warmth */
+        radial-gradient(circle at 50% 30%, rgba(255, 248, 220, 0.4) 0%, transparent 50%);
+    animation: breathe 8s ease-in-out infinite alternate;
 }
 
 @keyframes breathe {
     0% {
         transform: scale(1.0);
     }
+
     100% {
         transform: scale(1.15);
     }

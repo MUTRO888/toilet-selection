@@ -5,42 +5,47 @@ import * as THREE from 'three'
 import Lights from './components/Scene/Lights'
 import ToiletPaperVinyl from './components/Scene/ToiletPaperVinyl'
 import GroupRotation from './components/Scene/GroupRotation'
+import Effects from './components/Scene/Effects'
 
 import Background from './components/UI/Background'
 import Header from './components/UI/Header'
 import Marquee from './components/UI/Marquee'
 import TrackInfo from './components/UI/TrackInfo'
+import ReviewDisplay from './components/UI/ReviewDisplay'
 import InputOverlay from './components/UI/InputOverlay'
 
 import useMusicStore from './store/useMusicStore'
 import './App.css'
 
-function Scene() {
+function Scene({ coverImage }) {
     return (
         <>
             <Lights />
 
-            <group position={[0, -1.0, 0]} rotation={[Math.PI * 0.22, 0, 0]}>
+            <group position={[0, -0.9, 0]} rotation={[Math.PI * 0.25, 0, 0]}>
                 <GroupRotation>
-                    <ToiletPaperVinyl />
+                    <ToiletPaperVinyl coverImage={coverImage} />
                 </GroupRotation>
             </group>
         </>
     )
 }
 
-function TrackDisplay() {
-    const { title, artist } = useMusicStore()
-
+function ReviewInput() {
+    const { reviewText, setReviewText } = useMusicStore()
     return (
-        <div className="track-info">
-            <span className="track-title">{title}</span>
-            <span className="track-artist">{artist}</span>
-        </div>
+        <textarea
+            className="review-input"
+            placeholder="Write a toilet review..."
+            value={reviewText}
+            onChange={(e) => setReviewText(e.target.value)}
+        />
     )
 }
 
 export default function App() {
+    const coverImage = useMusicStore((state) => state.coverImage)
+
     return (
         <div className="app-layout">
             <div className="iphone-container">
@@ -50,8 +55,8 @@ export default function App() {
                     <div className="scene-container">
                         <Canvas
                             camera={{
-                                position: [0, 0.5, 7.5],
-                                fov: 44,
+                                position: [0, 6, 11],
+                                fov: 30,
                                 near: 0.1,
                                 far: 100
                             }}
@@ -59,22 +64,26 @@ export default function App() {
                             gl={{
                                 alpha: true,
                                 antialias: true,
-                                toneMapping: THREE.ACESFilmicToneMapping,
-                                toneMappingExposure: 0.85
+                                toneMapping: THREE.ReinhardToneMapping, // Softer tone mapping
+                                toneMappingExposure: 1.0
                             }}
                             onCreated={({ camera }) => {
-                                camera.lookAt(0, -0.8, 0)
+                                camera.lookAt(0, -0.5, 0)
                             }}
                         >
                             <React.Suspense fallback={null}>
-                                <Scene />
+                                <Scene coverImage={coverImage} />
+                                <Effects />
                             </React.Suspense>
                         </Canvas>
                     </div>
 
                     <div className="top-fade" />
+                    <div className="bottom-fade" />
+
                     <Header />
                     <TrackInfo />
+                    <ReviewDisplay />
                     <Marquee />
                 </div>
             </div>
@@ -82,21 +91,21 @@ export default function App() {
             <div className="control-panel">
                 <div className="brand">
                     <span className="brand-title">Toilet Selection</span>
-                    <span className="brand-sub">如厕精选 / Cyber Altar</span>
+                    <span className="brand-sub">如厕精选 / Organic High-Fidelity</span>
                 </div>
 
                 <div className="divider" />
 
                 <div>
-                    <span className="section-label">Now Playing</span>
-                    <TrackDisplay />
-                </div>
-
-                <div className="divider" />
-
-                <div>
-                    <span className="section-label">Import</span>
+                    <span className="section-label">Music</span>
                     <InputOverlay />
+                </div>
+
+                <div className="divider" />
+
+                <div>
+                    <span className="section-label">Toilet Review</span>
+                    <ReviewInput />
                 </div>
             </div>
         </div>

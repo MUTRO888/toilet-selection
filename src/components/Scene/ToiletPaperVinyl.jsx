@@ -1,187 +1,186 @@
-import { useMemo } from 'react'
+import { useMemo, useEffect } from 'react'
 import * as THREE from 'three'
-import { SCENE, COLORS } from '../../config/constants'
+import { SCENE } from '../../config/constants'
 
-const ROLL_RADIUS = SCENE.RECORD_RADIUS // 3.5
-const ROLL_HEIGHT = 0.8
-const TUBE_RADIUS = 1.3
-const HOLE_RADIUS = 0.45
+// RESTORED PROPORTIONS: Squat cylinder -> emphasizes the "Record" face
+const ROLL_RADIUS = 3.2
+const ROLL_HEIGHT = 1.6
+const TUBE_RADIUS = 1.1
 
-function createTubeLabelCanvas() {
-    const size = 512
+const PaperBodyMaterial = {
+    uniforms: {
+        uColor: { value: new THREE.Color('#Fdfdfd') },
+    },
+    vertexShader: `
+    varying vec2 vUv;
+    varying vec3 vNormal;
+    void main() {
+      vUv = uv;
+      vNormal = normal;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+    fragmentShader: `
+    uniform vec3 uColor;
+    varying vec2 vUv;
+    varying vec3 vNormal;
+
+    float random(vec2 st) {
+        return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+    }
+
+    void main() {
+      float noise = random(vUv * 300.0) * 0.03;
+      vec3 col = uColor - noise;
+      gl_FragColor = vec4(col, 1.0);
+    }
+  `
+}
+
+const PaperTopMaterial = {
+    uniforms: {
+        uColorLight: { value: new THREE.Color('#Fcfcfc') },
+        uColorDark: { value: new THREE.Color('#F0F0F0') },
+        uRadius: { value: ROLL_RADIUS },
+        uInnerRadius: { value: TUBE_RADIUS }
+    },
+    vertexShader: `
+    varying vec3 vPosition;
+    void main() {
+      vPosition = position;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+    fragmentShader: `
+    uniform vec3 uColorLight;
+    uniform vec3 uColorDark;
+    uniform float uRadius;
+    varying vec3 vPosition;
+
+    void main() {
+      float dist = length(vPosition.xy);
+      
+      // Clearer paper layers (lower frequency, higher contrast)
+      float freq = 120.0; 
+      float pattern = sin(dist * freq);
+      
+      float layer = smoothstep(-0.4, 0.4, pattern);
+      
+      // Base color with subtle radial gradient for depth
+      vec3 baseColor = mix(uColorDark, uColorLight, layer);
+      float vignette = smoothstep(0.0, uRadius, dist);
+      vec3 color = mix(baseColor, baseColor * 0.95, vignette);
+      
+      // Sharp rim shadow
+      float rim = smoothstep(uRadius - 0.2, uRadius, dist);
+      color = mix(color, color * 0.85, rim * 0.5);
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `
+}
+
+// Clean Label Canvas (No Text, just Image)
+function createMinimalLabelCanvas(imgElement) {
+    const size = 1024
     const canvas = document.createElement('canvas')
     canvas.width = size
     canvas.height = size
     const ctx = canvas.getContext('2d')
     const cx = size / 2
 
-    // Cardboard brown
-    ctx.fillStyle = '#A07850'
-    ctx.beginPath()
-    ctx.arc(cx, cx, cx, 0, Math.PI * 2)
-    ctx.fill()
+    // Background - Matte Grey/Beige
+    ctx.fillStyle = '#EAE8E3'
+    ctx.fillRect(0, 0, size, size)
 
-    // Cardboard grain rings
-    ctx.strokeStyle = 'rgba(100, 70, 20, 0.1)'
-    ctx.lineWidth = 0.5
-    for (let i = 0; i < 10; i++) {
+    // Minimal geometric alignment lines
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.arc(cx, cx, size * 0.45, 0, Math.PI * 2)
+    ctx.stroke()
+
+    const artRadius = size * 0.38
+
+    if (imgElement) {
+        ctx.save()
         ctx.beginPath()
-        ctx.arc(cx, cx, 70 + i * 18, 0, Math.PI * 2)
+        ctx.arc(cx, cx, artRadius, 0, Math.PI * 2)
+        ctx.clip()
+        ctx.save()
+        ctx.translate(cx, cx)
+        ctx.rotate(Math.PI)
+        ctx.drawImage(imgElement, -artRadius, -artRadius, artRadius * 2, artRadius * 2)
+        ctx.restore()
+        ctx.restore()
+
+        ctx.strokeStyle = 'rgba(0,0,0,0.1)'
+        ctx.lineWidth = 1
+        ctx.beginPath()
+        ctx.arc(cx, cx, artRadius, 0, Math.PI * 2)
         ctx.stroke()
+    } else {
+        ctx.textAlign = 'center'
+        ctx.textBaseline = 'middle'
+        ctx.fillStyle = '#333'
+        ctx.font = '700 36px "Inter", sans-serif'
+        ctx.fillText('SIDE A', cx, cx)
     }
-
-    // Brand text
-    ctx.fillStyle = COLORS.HIGHLIGHT
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.font = '900 36px Inter, sans-serif'
-    ctx.fillText('如厕精选', cx, cx - 20)
-    ctx.font = '600 12px Inter, sans-serif'
-    ctx.fillText('TOILET SELECTION', cx, cx + 15)
-
-    // Center hole
-    ctx.fillStyle = '#2A1A05'
-    ctx.beginPath()
-    ctx.arc(cx, cx, 42, 0, Math.PI * 2)
-    ctx.fill()
 
     return canvas
 }
 
-// Build a smooth ribbon geometry from a curve
-function createRibbonGeometry(curve, segments, halfWidth) {
-    const pts = curve.getPoints(segments)
-    const frames = curve.computeFrenetFrames(segments, false)
-
-    const positions = []
-    const uvs = []
-    const indices = []
-
-    for (let i = 0; i <= segments; i++) {
-        const p = pts[i]
-        const B = frames.binormals[i]
-        const t = i / segments
-
-        positions.push(
-            p.x + B.x * halfWidth, p.y + B.y * halfWidth, p.z + B.z * halfWidth,
-            p.x - B.x * halfWidth, p.y - B.y * halfWidth, p.z - B.z * halfWidth
-        )
-        uvs.push(0, t, 1, t)
-    }
-
-    for (let i = 0; i < segments; i++) {
-        const a = i * 2
-        indices.push(a, a + 2, a + 1, a + 1, a + 2, a + 3)
-    }
-
-    const geo = new THREE.BufferGeometry()
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-    geo.setIndex(indices)
-    geo.computeVertexNormals()
-    return geo
-}
-
-export default function ToiletPaperVinyl() {
+export default function ToiletPaperVinyl({ coverImage }) {
     const labelTexture = useMemo(() => {
-        const canvas = createTubeLabelCanvas()
+        const canvas = createMinimalLabelCanvas(null)
         const tex = new THREE.CanvasTexture(canvas)
         tex.colorSpace = THREE.SRGBColorSpace
+        tex.anisotropy = 16
         return tex
     }, [])
 
-    // Paper layer ridges (paper layers = vinyl grooves)
-    const ridges = useMemo(() => {
-        const count = 30
-        const inner = TUBE_RADIUS + 0.06
-        const outer = ROLL_RADIUS - 0.06
-        const step = (outer - inner) / count
-        const y = ROLL_HEIGHT / 2 + 0.006
-        const shades = ['#E8E0D2', '#F0E8DA', '#E4DCD0', '#ECE4D6']
-
-        return Array.from({ length: count }, (_, i) => (
-            <mesh key={i} rotation={[Math.PI / 2, 0, 0]} position={[0, y, 0]}>
-                <torusGeometry args={[inner + i * step, 0.022, 6, 128]} />
-                <meshStandardMaterial color={shades[i % 4]} roughness={0.92} metalness={0} />
-            </mesh>
-        ))
-    }, [])
-
-    // Flowing paper strip — smooth curve ribbon
-    const stripGeo = useMemo(() => {
-        const curve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(ROLL_RADIUS, 0, 0),
-            new THREE.Vector3(ROLL_RADIUS + 0.6, -0.05, 0.3),
-            new THREE.Vector3(ROLL_RADIUS + 1.4, -0.3, 0.6),
-            new THREE.Vector3(ROLL_RADIUS + 1.9, -1.0, 0.4),
-            new THREE.Vector3(ROLL_RADIUS + 2.2, -2.0, 0.7),
-            new THREE.Vector3(ROLL_RADIUS + 2.0, -3.0, 0.3),
-            new THREE.Vector3(ROLL_RADIUS + 1.6, -3.8, 0.0),
-        ])
-        return createRibbonGeometry(curve, 48, ROLL_HEIGHT * 0.42)
-    }, [])
+    useEffect(() => {
+        if (!coverImage) return
+        const img = new Image()
+        img.crossOrigin = "Anonymous"
+        img.src = coverImage
+        img.onload = () => {
+            const canvas = createMinimalLabelCanvas(img)
+            labelTexture.image = canvas
+            labelTexture.needsUpdate = true
+        }
+    }, [coverImage, labelTexture])
 
     return (
         <group>
-            {/* Paper roll body */}
             <mesh castShadow receiveShadow>
                 <cylinderGeometry args={[ROLL_RADIUS, ROLL_RADIUS, ROLL_HEIGHT, 128]} />
-                <meshStandardMaterial color="#F5F0E6" roughness={0.85} metalness={0} />
+                <shaderMaterial args={[PaperBodyMaterial]} />
             </mesh>
 
-            {/* Paper layer ridges on top face */}
-            {ridges}
+            <mesh position={[0, ROLL_HEIGHT / 2 + 0.001, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[TUBE_RADIUS, ROLL_RADIUS, 128, 1]} />
+                <shaderMaterial args={[PaperTopMaterial]} side={THREE.FrontSide} />
+            </mesh>
 
-            {/* Cardboard tube */}
+            <mesh position={[0, -ROLL_HEIGHT / 2 - 0.001, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[TUBE_RADIUS, ROLL_RADIUS, 128, 1]} />
+                <meshStandardMaterial color="#FDFDFD" roughness={0.9} />
+            </mesh>
+
             <mesh>
-                <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, ROLL_HEIGHT, 128]} />
-                <meshStandardMaterial color="#8B6914" roughness={0.7} metalness={0.05} />
+                <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, ROLL_HEIGHT - 0.02, 64]} />
+                <meshStandardMaterial color="#F5F5F0" roughness={1.0} />
             </mesh>
 
-            {/* Label face — brand on cardboard */}
-            <mesh position={[0, ROLL_HEIGHT / 2 + 0.006, 0]}>
-                <cylinderGeometry args={[TUBE_RADIUS, TUBE_RADIUS, 0.012, 128]} />
-                <meshStandardMaterial map={labelTexture} roughness={0.6} metalness={0.05} />
-            </mesh>
-
-            {/* Inner tube hollow */}
-            <mesh>
-                <cylinderGeometry args={[HOLE_RADIUS, HOLE_RADIUS, ROLL_HEIGHT + 0.02, 64]} />
+            <mesh position={[0, ROLL_HEIGHT / 2 + 0.002, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <circleGeometry args={[TUBE_RADIUS]} />
                 <meshStandardMaterial
-                    color="#2A1A05"
-                    roughness={0.85}
-                    metalness={0}
-                    side={THREE.BackSide}
+                    map={labelTexture}
+                    roughness={0.9}
+                    metalness={0.0}
                 />
             </mesh>
-
-            {/* Chrome holder rod through center */}
-            <mesh>
-                <cylinderGeometry args={[0.12, 0.12, ROLL_HEIGHT * 1.8, 16]} />
-                <meshStandardMaterial color="#d0d0d0" roughness={0.15} metalness={0.95} />
-            </mesh>
-
-            {/* Edge rings — top and bottom */}
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, ROLL_HEIGHT / 2, 0]}>
-                <torusGeometry args={[ROLL_RADIUS, 0.008, 8, 128]} />
-                <meshStandardMaterial color="#DDD8CC" roughness={0.7} metalness={0.05} />
-            </mesh>
-            <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -ROLL_HEIGHT / 2, 0]}>
-                <torusGeometry args={[ROLL_RADIUS, 0.008, 8, 128]} />
-                <meshStandardMaterial color="#DDD8CC" roughness={0.7} metalness={0.05} />
-            </mesh>
-
-            {/* Flowing paper strip — the unmistakable TP cue */}
-            <group rotation={[0, 0.4, 0]}>
-                <mesh geometry={stripGeo}>
-                    <meshStandardMaterial
-                        color="#F5F0E6"
-                        roughness={0.9}
-                        metalness={0}
-                        side={THREE.DoubleSide}
-                    />
-                </mesh>
-            </group>
         </group>
     )
 }

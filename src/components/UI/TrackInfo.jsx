@@ -1,18 +1,13 @@
-import useMusicStore from '../../store/useMusicStore'
 import styles from './TrackInfo.module.css'
+import useMusicStore from '../../store/useMusicStore'
 
 export default function TrackInfo() {
-    const { title, artist, coverImage } = useMusicStore()
+    const { title, artist } = useMusicStore()
 
     return (
         <div className={styles.wrap}>
-            {coverImage && (
-                <img src={coverImage} alt="" className={styles.cover} />
-            )}
-            <div className={styles.meta}>
-                <span className={styles.title}>{title}</span>
-                <span className={styles.artist}>{artist}</span>
-            </div>
+            <h2 className={styles.title}>{title}</h2>
+            <h3 className={styles.artist}>{artist}</h3>
         </div>
     )
 }
