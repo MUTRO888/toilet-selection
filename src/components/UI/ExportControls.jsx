@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import useMusicStore from '../../store/useMusicStore'
 import AudioSegmentSelector from './AudioSegmentSelector'
 import styles from './ExportControls.module.css'
@@ -24,7 +24,7 @@ export default function ExportControls() {
 
     const recorderRef = useRef(null)
     const chunksRef = useRef([])
-
+    const [errorDetail, setErrorDetail] = useState(null)
     useEffect(() => {
         if (!window.electronAPI) return
 
@@ -42,14 +42,14 @@ export default function ExportControls() {
 
                 chunksRef.current = []
                 const recorder = new MediaRecorder(stream, {
-                    mimeType: 'video/webm;codecs=vp9',
+                    mimeType: 'video/webm;codecs=vp8',
                 })
 
                 recorder.ondataavailable = (e) => {
                     if (e.data.size > 0) chunksRef.current.push(e.data)
                 }
 
-                recorder.start(100)
+                recorder.start()
                 recorderRef.current = recorder
             } catch (err) {
                 console.error('MediaRecorder setup failed:', err)
@@ -97,6 +97,7 @@ export default function ExportControls() {
 
         setExportState('preparing')
         setExportProgress(0)
+        setErrorDetail(null)
 
         const result = await window.electronAPI.exportVideo({
             songName: title,
@@ -108,9 +109,21 @@ export default function ExportControls() {
 
         if (!result.success) {
             console.error('Export failed:', result.error)
+            if (result.error?.includes('SONG_NOT_IN_LIBRARY')) {
+                setErrorDetail(`"${title}" not found in Music.app library. Add the song to your library first.`)
+            } else {
+                setErrorDetail(result.error || 'Unknown error')
+            }
             setExportState('error')
         }
     }, [title, artist, trackDuration, segmentStart, segmentEnd, setExportState, setExportProgress])
+
+    const handleCancel = useCallback(() => {
+        if (window.electronAPI) {
+            window.electronAPI.cancelExport()
+        }
+        resetExport()
+    }, [resetExport])
 
     const isBusy = ['preparing', 'starting', 'playing', 'recording', 'processing', 'saving'].includes(exportState)
     const isDone = exportState === 'done'
@@ -137,12 +150,14 @@ export default function ExportControls() {
             )}
 
             {isError && (
-                <span className={styles.errorText}>Export failed. Please try again.</span>
+                <span className={styles.errorText}>
+                    {errorDetail || 'Export failed. Please try again.'}
+                </span>
             )}
 
             <div className={styles.actions}>
                 {isBusy ? (
-                    <button className={styles.button} onClick={resetExport}>
+                    <button className={styles.button} onClick={handleCancel}>
                         Cancel
                     </button>
                 ) : isDone ? (

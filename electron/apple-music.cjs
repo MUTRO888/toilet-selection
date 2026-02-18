@@ -12,15 +12,28 @@ function runAppleScript(script) {
     })
 }
 
+function escapeAppleScript(str) {
+    return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
 async function playFrom(songName, artistName, startSeconds) {
+    const name = escapeAppleScript(songName)
+    const artist = escapeAppleScript(artistName)
+
     const script = `
 tell application "Music"
-    set matchedTracks to (every track whose name contains "${songName}" and artist contains "${artistName}")
+    set matchedTracks to (every track whose name contains "${name}" and artist contains "${artist}")
+    if (count of matchedTracks) is 0 then
+        set matchedTracks to (every track whose name contains "${name}")
+    end if
     if (count of matchedTracks) is 0 then
         error "SONG_NOT_IN_LIBRARY"
     end if
     set targetTrack to item 1 of matchedTracks
     play targetTrack
+    delay 0.5
+    set player position to ${startSeconds}
+    delay 0.3
     set player position to ${startSeconds}
 end tell`
 

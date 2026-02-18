@@ -6,14 +6,16 @@ function captureAudio(duration, outputPath) {
 
     return new Promise((resolve, reject) => {
         const proc = spawn(binaryPath, [
-            '--app-name', 'Music',
+            '--app-name', 'com.apple.Music',
             '--duration', String(duration),
             '--output', outputPath,
         ])
 
         let stderr = ''
         proc.stderr.on('data', (chunk) => {
-            stderr += chunk.toString()
+            const text = chunk.toString()
+            stderr += text
+            console.log('[audio-capture]', text.trim())
         })
 
         proc.on('close', (code) => {

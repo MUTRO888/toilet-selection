@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Compiled Swift binary
+swift/audio-capture
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

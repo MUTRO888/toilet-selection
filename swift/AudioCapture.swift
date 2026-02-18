@@ -7,6 +7,7 @@ class AudioCaptureDelegate: NSObject, SCStreamOutput, SCStreamDelegate {
     let assetWriter: AVAssetWriter
     let audioInput: AVAssetWriterInput
     var started = false
+    var sampleCount = 0
 
     init(outputURL: URL) throws {
         assetWriter = try AVAssetWriter(outputURL: outputURL, fileType: .m4a)
@@ -32,14 +33,21 @@ class AudioCaptureDelegate: NSObject, SCStreamOutput, SCStreamDelegate {
             assetWriter.startWriting()
             assetWriter.startSession(atSourceTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
             started = true
+            fputs("First audio sample received\n", stderr)
         }
 
+        sampleCount += 1
         if audioInput.isReadyForMoreMediaData {
             audioInput.append(sampleBuffer)
         }
     }
 
     func finalize() async {
+        fputs("Finalizing: \(sampleCount) samples received, started=\(started)\n", stderr)
+        guard started else {
+            fputs("Warning: No audio samples received, skipping finalize\n", stderr)
+            return
+        }
         audioInput.markAsFinished()
         await assetWriter.finishWriting()
     }
@@ -49,10 +57,15 @@ class AudioCaptureDelegate: NSObject, SCStreamOutput, SCStreamDelegate {
 func captureAudio(appName: String, duration: Double, outputPath: String) async throws {
     let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
 
-    guard let targetApp = content.applications.first(where: { $0.applicationName == appName }) else {
+    guard let targetApp = content.applications.first(where: { $0.bundleIdentifier == appName || $0.applicationName == appName }) else {
         fputs("Error: Application '\(appName)' not found\n", stderr)
+        fputs("Available apps:\n", stderr)
+        for app in content.applications.prefix(20) {
+            fputs("  \(app.applicationName) (\(app.bundleIdentifier))\n", stderr)
+        }
         exit(1)
     }
+    fputs("Found app: \(targetApp.applicationName) (\(targetApp.bundleIdentifier))\n", stderr)
 
     let appFilter = SCContentFilter(display: content.displays[0], including: [targetApp], exceptingWindows: [])
 
@@ -73,7 +86,9 @@ func captureAudio(appName: String, duration: Double, outputPath: String) async t
 
     let delegate = try AudioCaptureDelegate(outputURL: outputURL)
     let stream = SCStream(filter: appFilter, configuration: config, delegate: delegate)
-    try stream.addStreamOutput(delegate, type: .audio, sampleHandlerQueue: .main)
+
+    let sampleQueue = DispatchQueue(label: "com.toilet-selection.audio-capture")
+    try stream.addStreamOutput(delegate, type: .audio, sampleHandlerQueue: sampleQueue)
 
     try await stream.startCapture()
     fputs("Capturing audio for \(duration) seconds...\n", stderr)
@@ -106,7 +121,6 @@ while i < args.count {
 }
 
 if #available(macOS 13.0, *) {
-    let semaphore = DispatchSemaphore(value: 0)
     Task {
         do {
             try await captureAudio(appName: appName, duration: duration, outputPath: outputPath)
@@ -114,9 +128,9 @@ if #available(macOS 13.0, *) {
             fputs("Error: \(error.localizedDescription)\n", stderr)
             exit(1)
         }
-        semaphore.signal()
+        exit(0)
     }
-    semaphore.wait()
+    dispatchMain()
 } else {
     fputs("Error: macOS 13.0+ required for ScreenCaptureKit\n", stderr)
     exit(1)

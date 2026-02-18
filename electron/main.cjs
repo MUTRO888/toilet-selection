@@ -9,7 +9,7 @@ function createWindow() {
         width: 1400,
         height: 900,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            preload: path.join(__dirname, 'preload.cjs'),
             contextIsolation: true,
             nodeIntegration: false,
         },
@@ -24,7 +24,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
     createWindow()
-    const handlers = require('./ipc-handlers')
+    const handlers = require('./ipc-handlers.cjs')
     handlers.register(ipcMain, () => mainWindow, dialog, desktopCapturer)
 })
 
