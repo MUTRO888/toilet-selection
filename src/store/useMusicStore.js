@@ -75,7 +75,12 @@ const useMusicStore = create((set) => ({
       const id = songIdMatch ? songIdMatch[1] : albumIdMatch ? albumIdMatch[1] : null
       if (!id) throw new Error('Invalid Apple Music URL')
 
-      const apiUrl = `https://itunes.apple.com/lookup?id=${id}&entity=song&country=CN`
+      const countryMatch = url.match(/music\.apple\.com\/([a-z]{2})\//i)
+      const country = countryMatch ? countryMatch[1].toUpperCase() : 'US'
+
+      const isElectron = Boolean(window?.electronAPI)
+      const base = isElectron ? 'https://itunes.apple.com' : '/api/itunes'
+      const apiUrl = `${base}/lookup?id=${id}&entity=song&country=${country}`
 
       const response = await fetch(apiUrl)
       const data = await response.json()
